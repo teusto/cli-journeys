@@ -2,7 +2,7 @@ use color_eyre::Result;
 use crossterm::event::{self, Event, KeyEvent};
 use ratatui::{
     DefaultTerminal, Frame, 
-    widgets::{Paragraph, Widget, Block, BorderType, List, ListItem, ListState, Padding, Borders},
+    widgets::{Paragraph, Widget, Block, BorderType, List, ListItem, ListState, Padding, Borders, HighlightSpacing},
     layout::{Constraint, Direction, Layout},
     style::{Color, Stylize, Style}
 };
@@ -96,19 +96,27 @@ fn handle_key(key: KeyEvent, app_state: &mut AppState) -> bool{
 
 fn render(frame: &mut Frame, app_state: &mut AppState) {
     let chunks = Layout::default().direction(Direction::Horizontal).constraints([
-        Constraint::Percentage(25),
-        Constraint::Percentage(75),
+        Constraint::Percentage(20),
+        Constraint::Percentage(80),
     ]).split(frame.area());
 
-    let journeys = Block::default().borders(Borders::ALL).style(Style::default().fg(Color::Yellow));
+    let journeys = Block::default().title("Journeys").borders(Borders::ALL).border_type(BorderType::Rounded).style(Style::default().fg(Color::Green));
+    let right_area = chunks[1];
 
-    let list = List::new(app_state.journeys.iter().map(|journey| ListItem::from(journey.name.clone()))).block(journeys);
+    let journey_menu = Block::default().title("Journey Menu").borders(Borders::ALL).border_type(BorderType::Rounded);
+    let journey_running = Block::default().title("Running Journey").borders(Borders::ALL).border_type(BorderType::Rounded);
+
+    let list = List::new(app_state.journeys.iter().map(|journey| ListItem::from(journey.name.clone()))).block(journeys).highlight_symbol(">> ").highlight_spacing(HighlightSpacing::Always).highlight_style(Style::default().fg(Color::Yellow));
     
-    frame.render_widget(list, chunks[0]);
+    frame.render_stateful_widget(list, chunks[0], &mut app_state.list_state);
 
-    // let [left, right] = Layout::horizontal([Constraint::Fill(1); 2]).areas(frame.area());
-    // let [top_right, bottom_right] = Layout::vertical([Constraint::Fill(1); 2]).areas(right);
-
+    let journey_menu_chunks = Layout::vertical([
+        Constraint::Percentage(25),
+        Constraint::Percentage(75),
+    ]).split(right_area);
+    
+    frame.render_widget(journey_menu, journey_menu_chunks[0]);
+    frame.render_widget(journey_running, journey_menu_chunks[1]);
     
     // let journeys = Block::new().borders(Borders::TOP).title("Journeys").padding(Padding::uniform(1)).borders(Borders::ALL).border_type(BorderType::Rounded).fg(Color::Yellow);
     // let journey_menu = Block::new().borders(Borders::TOP).title("Journey Menu").padding(Padding::uniform(1)).borders(Borders::ALL).border_type(BorderType::Rounded).fg(Color::Green);
