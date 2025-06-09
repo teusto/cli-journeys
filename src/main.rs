@@ -2,7 +2,7 @@ use color_eyre::Result;
 use crossterm::event::{self, Event, KeyEvent};
 use ratatui::{
     DefaultTerminal, Frame, 
-    widgets::{Paragraph, Widget, Block, BorderType, List, ListItem, ListState, Padding, Borders, HighlightSpacing},
+    widgets::{Paragraph, Widget, Block, BorderType, List, ListItem, ListState, Wrap, Padding, Borders, HighlightSpacing},
     layout::{Constraint, Direction, Layout},
     style::{Color, Stylize, Style}
 };
@@ -27,6 +27,7 @@ enum CurrentScreen {
     #[default]
     Journeys,
     JourneyContext,
+    JourneyRunning,
 }
 
 fn main() -> Result<()> {
@@ -34,19 +35,24 @@ fn main() -> Result<()> {
     let mut state = AppState::default();
 
     state.journeys.push(Journey{
-        name: "Journey 1".to_string(),
+        name: "Keypair Generation".to_string(),
         level: 1,
-        description: "Description 1".to_string(),
+        description: "Implement secure cryptographic key generation with mnemonic phrase backup and checksum validation.".to_string(),
     });
     state.journeys.push(Journey{
-        name: "Journey 2".to_string(),
-        level: 2,
-        description: "Description 2".to_string(),
+        name: "Account Rent Calculator".to_string(),
+        level: 1,
+        description: "Develop tool for calculating minimum balance requirements across account types.".to_string(),
     });
     state.journeys.push(Journey{
-        name: "Journey 3".to_string(),
-        level: 3,
-        description: "Description 3".to_string(),
+        name: "Data Serialization".to_string(),
+        level: 1,
+        description: "Practice Borsh serialization/deserialization with custom data structures.".to_string(),
+    });
+    state.journeys.push(Journey{
+        name: "Network Health Monitor".to_string(),
+        level: 1,
+        description: "Develop cluster health checker with RPC endpoint analysis.".to_string(),
     });
 
     let terminal = ratatui::init();
@@ -71,40 +77,101 @@ fn run(mut terminal: DefaultTerminal, app_state: &mut AppState) -> Result<()> {
 }
 
 fn handle_key(key: KeyEvent, app_state: &mut AppState) -> bool{
-    match key.code {
-        event::KeyCode::Esc => return true,
-        event::KeyCode::Char(char) => {
-            match char {
-                'j' => {
-                    app_state.list_state.select_next();
-                },
-                'k' => {
-                    app_state.list_state.select_previous();
-                },
-                'p' => {
-                    if let Some(selected) = app_state.list_state.selected() {
-                        app_state.selected_journey = Some(selected);
-                    }
-                },
-                _ => {}
-            }
+     // Common key handling for all screens
+     match key.code {
+        event::KeyCode::Esc => return true, // Exit the app
+        event::KeyCode::Char('q') => {
+            // Go back to previous screen (default to Journeys)
+            app_state.current_screen = CurrentScreen::Journeys;
+            return false;
         },
         _ => {}
-    }   
+    }
+
+    // Screen-specific key handling
+    match app_state.current_screen {
+        CurrentScreen::Journeys => {
+            // Journey list navigation and selection
+            if let event::KeyCode::Char(char) = key.code {
+                match char {
+                    'j' => {
+                        app_state.list_state.select_next();
+                    },
+                    'k' => {
+                        app_state.list_state.select_previous();
+                    },
+                    'p' => {
+                        if let Some(selected) = app_state.list_state.selected() {
+                            app_state.selected_journey = Some(selected);
+                            app_state.current_screen = CurrentScreen::JourneyContext;
+                        }
+                    },
+                    _ => {}
+                }
+            }
+        },
+        CurrentScreen::JourneyContext => {
+            // Journey context screen navigation
+            if let event::KeyCode::Char(char) = key.code {
+                match char {
+                    'r' => {
+                        // Move to journey running screen
+                        app_state.current_screen = CurrentScreen::JourneyRunning;
+                    },
+                    'j' => {
+                        // Different behavior for 'j' in this screen
+                        // For example, navigate through journey details
+                    },
+                    'k' => {
+                        // Different behavior for 'k' in this screen
+                    },
+                    _ => {}
+                }
+            }
+        },
+        CurrentScreen::JourneyRunning => {
+            // Journey running screen navigation
+            if let event::KeyCode::Char(char) = key.code {
+                match char {
+                    'b' => {
+                        // Example: stop the running journey
+                        app_state.current_screen = CurrentScreen::JourneyContext;
+                    },
+                    'p' => {
+                        // Example: pause/play the journey
+                    },
+                    _ => {}
+                }
+            }
+        }
+    }
     false
+}
+
+fn get_style_for_screen(current_screen: &CurrentScreen, target_screen: &CurrentScreen) -> Style {
+    if std::mem::discriminant(current_screen) == std::mem::discriminant(target_screen) {
+        Style::default().fg(Color::Green)
+    } else {
+        Style::default().fg(Color::White)
+    }
 }
 
 fn render(frame: &mut Frame, app_state: &mut AppState) {
     let chunks = Layout::default().direction(Direction::Horizontal).constraints([
-        Constraint::Percentage(20),
-        Constraint::Percentage(80),
+        Constraint::Percentage(30),
+        Constraint::Percentage(70),
     ]).split(frame.area());
+    
 
-    let journeys = Block::default().title("Journeys").borders(Borders::ALL).border_type(BorderType::Rounded).style(Style::default().fg(Color::Green));
+    let journey_style = get_style_for_screen(&app_state.current_screen, &CurrentScreen::Journeys);
+    let journeys = Block::default().title("Journeys").borders(Borders::ALL).border_type(BorderType::Rounded).style(journey_style);
     let right_area = chunks[1];
 
-    let journey_menu = Block::default().title("Journey Menu").borders(Borders::ALL).border_type(BorderType::Rounded);
-    let journey_running = Block::default().title("Running Journey").borders(Borders::ALL).border_type(BorderType::Rounded);
+    let journey_context_style = get_style_for_screen(&app_state.current_screen, &CurrentScreen::JourneyContext);
+    let journey_menu = Block::default().title("Journey Menu").borders(Borders::ALL).border_type(BorderType::Rounded).style(journey_context_style);
+
+    let journey_running_style = get_style_for_screen(&app_state.current_screen, &CurrentScreen::JourneyRunning);
+    let journey_running = Block::default().title("Running Journey").borders(Borders::ALL).border_type(BorderType::Rounded).style(journey_running_style);
 
     let list = List::new(app_state.journeys.iter().map(|journey| ListItem::from(journey.name.clone()))).block(journeys).highlight_symbol(">> ").highlight_spacing(HighlightSpacing::Always).highlight_style(Style::default().fg(Color::Yellow));
     
@@ -115,7 +182,9 @@ fn render(frame: &mut Frame, app_state: &mut AppState) {
         Constraint::Percentage(75),
     ]).split(right_area);
     
-    frame.render_widget(journey_menu, journey_menu_chunks[0]);
+    let journey_description = Paragraph::new(app_state.selected_journey.map(|journey| app_state.journeys[journey].description.clone()).unwrap_or("No journey selected".to_string())).block(journey_menu).wrap(Wrap { trim: true });
+
+    frame.render_widget(journey_description, journey_menu_chunks[0]);
     frame.render_widget(journey_running, journey_menu_chunks[1]);
     
     // let journeys = Block::new().borders(Borders::TOP).title("Journeys").padding(Padding::uniform(1)).borders(Borders::ALL).border_type(BorderType::Rounded).fg(Color::Yellow);
