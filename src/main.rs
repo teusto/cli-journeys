@@ -20,6 +20,7 @@ struct AppState {
     list_state: ListState, // The state of the list of journeys
     selected_journey: Option<usize>, // The selected journey passed to the journey context
     current_screen: CurrentScreen, // The current screen of the application
+    journey_menu: Vec<T>,
 }
 
 #[derive(Debug, Default)]
@@ -125,6 +126,9 @@ fn handle_key(key: KeyEvent, app_state: &mut AppState) -> bool{
                     'k' => {
                         // Different behavior for 'k' in this screen
                     },
+                    'm' => {
+                        // 
+                    }
                     _ => {}
                 }
             }
@@ -181,6 +185,15 @@ fn render(frame: &mut Frame, app_state: &mut AppState) {
         Constraint::Percentage(25),
         Constraint::Percentage(75),
     ]).split(right_area);
+
+    match app_state.current_screen {
+        CurrentScreen::JourneyContext => {
+
+        },
+        CurrentScreen::JourneyRunning => {
+
+        }
+    }
     
     let journey_description = Paragraph::new(app_state.selected_journey.map(|journey| app_state.journeys[journey].description.clone()).unwrap_or("No journey selected".to_string())).block(journey_menu).wrap(Wrap { trim: true });
 
