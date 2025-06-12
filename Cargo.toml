@@ -11,3 +11,5 @@ solana-sdk = "1.16"
 solana-client = "1.16"
 bip39 = { version = "2.1.0" , features = ["rand","rand_core", "unicode-normalization"]}
 rand = "0.8.5"
+tokio = { version = "1", features = ["full"] }
+

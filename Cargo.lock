@@ -2055,6 +2055,7 @@ dependencies = [
  "ratatui",
  "solana-client",
  "solana-sdk",
+ "tokio",
 ]
 
 [[package]]

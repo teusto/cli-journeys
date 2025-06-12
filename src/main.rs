@@ -60,9 +60,9 @@ fn main() -> Result<()> {
         description: "Practice Borsh serialization/deserialization with custom data structures.".to_string(),
     });
     state.journeys.push(Journey{
-        name: "Network Health Monitor".to_string(),
+        name: "Balance Checker".to_string(),
         level: 1,
-        description: "Develop cluster health checker with RPC endpoint analysis.".to_string(),
+        description: "Command-line tool for querying account balances across networks.".to_string(),
     });
 
 
@@ -218,8 +218,8 @@ fn render(frame: &mut Frame, app_state: &mut AppState) {
                 JourneyOutput::Mnemonic(phrase) => {
                     format!("Mnemonic Phrase\n\n{}\n\nPress 'b' to go back", phrase)
                 },
-                JourneyOutput::RentCalculator(result) => {
-                    format!("Rent Calculation\n\n{}\n\nPress 'b' to go back", result)
+                JourneyOutput::BalanceChecker(balances) => {
+                    format!("Account Balance Checker\n\n{}\n\nPress 'b' to go back", balances)
                 },
                 JourneyOutput::None => {
                     "No output yet.".into()
