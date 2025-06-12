@@ -1,3 +1,5 @@
+mod journeys;
+
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyEvent};
 use ratatui::{
@@ -6,6 +8,8 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Stylize, Style}
 };
+use journeys::helpers::{run_journey, JourneyOutput};
+
 
 #[derive(Debug)]
 struct Journey {
@@ -20,7 +24,7 @@ struct AppState {
     list_state: ListState, // The state of the list of journeys
     selected_journey: Option<usize>, // The selected journey passed to the journey context
     current_screen: CurrentScreen, // The current screen of the application
-    journey_menu: Vec<T>,
+    journey_output: JourneyOutput,
 }
 
 #[derive(Debug, Default)]
@@ -38,7 +42,12 @@ fn main() -> Result<()> {
     state.journeys.push(Journey{
         name: "Keypair Generation".to_string(),
         level: 1,
-        description: "Implement secure cryptographic key generation with mnemonic phrase backup and checksum validation.".to_string(),
+        description: "Implement secure cryptographic key generation".to_string(),
+    });
+    state.journeys.push(Journey{
+        name: "Mnemonics Generation".to_string(),
+        level: 1,
+        description: "Implement mnemonic phrase backup and checksum validation.".to_string(),
     });
     state.journeys.push(Journey{
         name: "Account Rent Calculator".to_string(),
@@ -55,6 +64,8 @@ fn main() -> Result<()> {
         level: 1,
         description: "Develop cluster health checker with RPC endpoint analysis.".to_string(),
     });
+
+
 
     let terminal = ratatui::init();
     let result = run(terminal, &mut state);
@@ -117,7 +128,13 @@ fn handle_key(key: KeyEvent, app_state: &mut AppState) -> bool{
                 match char {
                     'r' => {
                         // Move to journey running screen
+                        // Based on the journey selected call one of the helpers functions
+                        if let Some(idx) = app_state.selected_journey {
+                            let name = &app_state.journeys[idx].name;
+                            app_state.journey_output = run_journey(name);
+                        }
                         app_state.current_screen = CurrentScreen::JourneyRunning;
+                        
                     },
                     'j' => {
                         // Different behavior for 'j' in this screen
@@ -188,16 +205,37 @@ fn render(frame: &mut Frame, app_state: &mut AppState) {
 
     match app_state.current_screen {
         CurrentScreen::JourneyContext => {
-
+            let menu_block = Block::default().title("Journey Menu").borders(Borders::ALL);
+            let journey_description = Paragraph::new(app_state.selected_journey.map(|journey| app_state.journeys[journey].description.clone()).unwrap_or("No journey selected".to_string())).block(menu_block).wrap(Wrap { trim: true });
+            frame.render_widget(journey_description, journey_menu_chunks[0]);
         },
         CurrentScreen::JourneyRunning => {
+            let running_block = Block::default().borders(Borders::ALL);
+            let content = match &app_state.journey_output {
+                JourneyOutput::Keypair(keypair) => {
+                    format!("Generated Keypair\nPublic Key: {:?}", keypair)
+                },
+                JourneyOutput::Mnemonic(phrase) => {
+                    format!("Mnemonic Phrase\n\n{}\n\nPress 'b' to go back", phrase)
+                },
+                JourneyOutput::RentCalculator(result) => {
+                    format!("Rent Calculation\n\n{}\n\nPress 'b' to go back", result)
+                },
+                JourneyOutput::None => {
+                    "No output yet.".into()
+                }
+            };
 
-        }
+            let paragraph = Paragraph::new(content).block(running_block).wrap(Wrap {trim: true});
+
+            frame.render_widget(paragraph, journey_menu_chunks[1]);
+        },
+        _ => {}
     }
     
-    let journey_description = Paragraph::new(app_state.selected_journey.map(|journey| app_state.journeys[journey].description.clone()).unwrap_or("No journey selected".to_string())).block(journey_menu).wrap(Wrap { trim: true });
+   
 
-    frame.render_widget(journey_description, journey_menu_chunks[0]);
+    frame.render_widget(journey_menu, journey_menu_chunks[0]);
     frame.render_widget(journey_running, journey_menu_chunks[1]);
     
     // let journeys = Block::new().borders(Borders::TOP).title("Journeys").padding(Padding::uniform(1)).borders(Borders::ALL).border_type(BorderType::Rounded).fg(Color::Yellow);

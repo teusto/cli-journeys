@@ -1,2 +1,2 @@
-pub mod keypair_generation;
-pub use keypair_generation::KeypairJourney;
+pub mod helpers;
+pub use helpers::{generate_keypair};
