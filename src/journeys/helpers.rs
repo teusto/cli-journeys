@@ -2,13 +2,22 @@ use solana_sdk::{signature::Keypair, signer::Signer, pubkey::Pubkey};
 use bip39::{Language, Mnemonic};
 use solana_client::rpc_client::RpcClient;
 use std::str::FromStr;
+use borsh::{BorshSerialize, BorshDeserialize};
 
 #[derive(Debug)]
 pub enum JourneyOutput {
     Keypair(Keypair),
     Mnemonic(Mnemonic),
     BalanceChecker(String),
+    BorshSerialization(String),
     None,
+}
+
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
+struct InputToSerialize {
+    info: String,
+    id: u8,
+    some: bool,
 }
 
 impl Default for JourneyOutput {
@@ -70,6 +79,18 @@ pub fn as_balance_checker() -> JourneyOutput {
     JourneyOutput::BalanceChecker(results)
 }
 
+pub fn as_borsh_serialization(input: &InputToSerialize) -> JourneyOutput {
+    let mut results = String::new();
+    results.push_str("==== Borsh Serialized Hash ====\n");
+    let bytes = input.try_to_vec().expect("Serialization failed");
+
+    let hex_string = bytes.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join("");
+    results.push_str(&hex_string);
+
+    JourneyOutput::BorshSerialization(results)
+    
+}
+
 pub fn run_journey(journey_name: &str) -> JourneyOutput {
     match journey_name {
         "Keypair Generation" => {
@@ -80,6 +101,14 @@ pub fn run_journey(journey_name: &str) -> JourneyOutput {
         }
         "Balance Checker" => {
             as_balance_checker()
+        }
+        "Borsh Serialization" => {
+            let data_to = { InputToSerialize {
+                info: "My name is Matheus".to_string(),
+                id: 30,
+                some: true,
+            }};
+            as_borsh_serialization(&dataTo)
         }
         _ => {
             JourneyOutput::None

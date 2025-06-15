@@ -55,7 +55,7 @@ fn main() -> Result<()> {
         description: "Develop tool for calculating minimum balance requirements across account types.".to_string(),
     });
     state.journeys.push(Journey{
-        name: "Data Serialization".to_string(),
+        name: "Borsh Serialization".to_string(),
         level: 1,
         description: "Practice Borsh serialization/deserialization with custom data structures.".to_string(),
     });
@@ -220,6 +220,9 @@ fn render(frame: &mut Frame, app_state: &mut AppState) {
                 },
                 JourneyOutput::BalanceChecker(balances) => {
                     format!("Account Balance Checker\n\n{}\n\nPress 'b' to go back", balances)
+                },
+                JourneyOutput::BorshSerialization(borsh) => {
+                    format!("Borsh Serialization\n\n{}\n\nPress 'b' to go back", borsh)
                 },
                 JourneyOutput::None => {
                     "No output yet.".into()
